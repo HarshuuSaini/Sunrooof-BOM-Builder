@@ -19,6 +19,15 @@ const touchByColour = designBoms.touchByColour || {};
 
 export const DESIGNS = catalog.designs;
 
+/**
+ * Human-facing finished-goods code. The short `model.code` remains the stable
+ * BOM lookup key; this expanded code also carries console count and L × W × H.
+ * Example: CL2A-WH-2-1250-850-210.
+ */
+export function displayModelCode(model: Model): string {
+  return `${model.code}-${model.console}-${model.length}-${model.width}-${model.height}`;
+}
+
 /** Distinct size classes (A/B/C) available for a design. */
 export function sizeClassesFor(designCode: string): string[] {
   return [...new Set(catalog.models.filter((m) => m.designCode === designCode).map((m) => m.sizeClass))];
@@ -99,7 +108,7 @@ export function flattenBom(model: Model, lineQty: number, includeRemote = true):
   const rows: FlatRow[] = [];
   rows.push({
     level: 0,
-    name: model.code,
+    name: displayModelCode(model),
     size: `${model.length}x${model.width}x${model.height}`,
     perUnitQty: 1,
     actualQty: lineQty,

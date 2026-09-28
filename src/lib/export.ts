@@ -1,7 +1,7 @@
 // @ts-ignore
 import XLSX from "xlsx-js-style";
 import type { ProjectLine, OrderMeta, Model } from "./types";
-import { bomFor, filterTree, type RemoteColor } from "./catalog";
+import { bomFor, filterTree, displayModelCode, type RemoteColor } from "./catalog";
 import partsCutsJson from "@/data/partscuts.json";
 import mrpBomJson from "@/data/mrpbom.json";
 
@@ -247,12 +247,13 @@ export function exportProjectBom(
         });
       });
 
-    fgQtyByCode.set(model.code, (fgQtyByCode.get(model.code) ?? 0) + line.qty);
+    const fgCode = displayModelCode(model);
+    fgQtyByCode.set(fgCode, (fgQtyByCode.get(fgCode) ?? 0) + line.qty);
 
     // MRP: consumed materials = Σ (qty per part) × (part qty), from the colour BOM.
     colourMats.forEach((m) => {
       const total = parts.reduce((sum, p) => sum + (m.perPart[p.code] || 0) * p.qty, 0);
-      addTo(mrpAcc, normaliseDept(m.dept), model.code, m.name, m.uom, total);
+      addTo(mrpAcc, normaliseDept(m.dept), fgCode, m.name, m.uom, total);
     });
 
     // HARDWARE: the discrete Hardware Pack items from the Master BOM tree — the
@@ -273,7 +274,7 @@ export function exportProjectBom(
           name = name.replace(setMatch[0], "").replace(/\s{2,}/g, " ").trim();
           uom = "PCS";
         }
-        addTo(hwAcc, dept, model.code, name, uom, qty);
+        addTo(hwAcc, dept, fgCode, name, uom, qty);
       });
     });
   });
@@ -316,7 +317,7 @@ export function exportProjectBom(
           `MRP ${mrpNo}`,
           dateStr,
           partyName,
-          model.code,
+          displayModelCode(model),
           line.qty,
           item.name,
           "0Main Location",

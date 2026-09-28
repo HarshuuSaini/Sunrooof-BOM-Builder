@@ -9,6 +9,7 @@ import {
   colorsFor,
   bomFor,
   filterTree,
+  displayModelCode,
   REMOTE_COLORS,
 } from "@/lib/catalog";
 import type { RemoteColor } from "@/lib/catalog";
@@ -23,8 +24,9 @@ const inr = (n: number) => "₹" + n.toLocaleString("en-IN");
  * Example: CL2C-WH = CL (Classical) + 2C (2x3 / 6 consoles) + WH (White).
  */
 function ModelCodeDetails({ model }: { model: Model }) {
+  const fullCode = displayModelCode(model);
   return (
-    <div className="model-code-details" aria-label={`Model code details for ${model.code}`}>
+    <div className="model-code-details" aria-label={`Model code details for ${fullCode}`}>
       <div><strong>{model.designCode}</strong><span>{model.designName} design</span></div>
       <div>
         <strong>{model.sizeCode}</strong>
@@ -87,6 +89,7 @@ export default function SunrooofBomBuilder() {
 
   const tree: BomTree | null = model ? bomFor(model) : null;
   const shownTree: BomTree | null = tree ? filterTree(tree, includeRemote, remoteColor, model?.colorName) : null;
+  const fullModelCode = model ? displayModelCode(model) : "";
   const totalValue = lines.reduce((s, l) => s + l.model.price * l.qty, 0);
 
   return (
@@ -170,17 +173,17 @@ export default function SunrooofBomBuilder() {
           <div className="print-head">
             <h2>SUNROOOF — Bill of Materials</h2>
             <div className="meta">
-              {model.code} · {model.designName} · {model.colorName} · {model.console} console
+              {fullModelCode} · {model.designName} · {model.colorName} · {model.console} console
               {model.console > 1 ? "s" : ""} · {model.length}×{model.width}×{model.height} mm
             </div>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h3>② {model.code}</h3>
+            <h3>② {fullModelCode}</h3>
             <button className="secondary no-print" disabled={!tree} onClick={() => window.print()}>
               🖨 Print / PDF
             </button>
           </div>
-          <div className="code">{model.code}</div>
+          <div className="code">{fullModelCode}</div>
           <ModelCodeDetails model={model} />
           <div className="kpi" style={{ marginTop: 12 }}>
             <div><span className="v">{model.console}</span><span className="l">Consoles</span></div>
@@ -294,7 +297,7 @@ export default function SunrooofBomBuilder() {
               {lines.map((l) => (
                 <tr key={l.id}>
                   <td>{l.id}</td>
-                  <td className="code" style={{ fontSize: 12 }}>{l.model.code}</td>
+                  <td className="code" style={{ fontSize: 12 }}>{displayModelCode(l.model)}</td>
                   <td>{l.model.designName}</td>
                   <td>{l.model.colorName}</td>
                   <td>{l.model.console}</td>
