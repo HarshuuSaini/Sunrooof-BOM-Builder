@@ -24,6 +24,7 @@ export default function SunrooofBomBuilder() {
   const [qty, setQty] = useState(1);
   const [includeRemote, setIncludeRemote] = useState(true);
   const [remoteColor, setRemoteColor] = useState<RemoteColor>("BLACK");
+  const [remoteQty, setRemoteQty] = useState(1);
   const [lines, setLines] = useState<ProjectLine[]>([]);
   const [partyName, setPartyName] = useState("Ms.Lata Ahuja");
   const [mrpNo, setMrpNo] = useState("1181");
@@ -72,6 +73,7 @@ export default function SunrooofBomBuilder() {
         <ConfigField label="Colour" marker="P4"><select value={colorCode} onChange={(event) => setColorCode(event.target.value)}>{colors.map((item) => <option key={item.colorCode} value={item.colorCode}>{item.colorName}</option>)}</select></ConfigField>
         <ConfigField label="Remote Colour" marker="P5"><select value={remoteColor} disabled={!includeRemote} onChange={(event) => setRemoteColor(event.target.value as RemoteColor)}>{REMOTE_COLORS.map((item) => <option key={item} value={item}>{item.charAt(0) + item.slice(1).toLowerCase()}</option>)}</select></ConfigField>
         <label className="check planning-remote"><input type="checkbox" checked={includeRemote} onChange={(event) => setIncludeRemote(event.target.checked)} />Include Remote (D1)</label>
+        {includeRemote && <ConfigField label="Remote Quantity" marker=""><input type="number" min={1} value={remoteQty} onChange={(event) => setRemoteQty(Math.max(1, Number(event.target.value) || 1))} /></ConfigField>}
       </aside>
 
       <main className="planning-workspace">
@@ -87,7 +89,7 @@ export default function SunrooofBomBuilder() {
 
         <div className="planning-tabs no-print" role="tablist" aria-label="Builder sections">
           <button role="tab" aria-selected={activeTab === "bom"} className={activeTab === "bom" ? "active" : ""} onClick={() => setActiveTab("bom")}>BOM Preview</button>
-          <button role="tab" aria-selected={activeTab === "project"} className={activeTab === "project" ? "active" : ""} onClick={() => setActiveTab("project")}>Project Lines <span>{lines.length}</span></button>
+          <button role="tab" aria-selected={activeTab === "project"} className={activeTab === "project" ? "active" : ""} onClick={() => setActiveTab("project")}>Project Lines <span>{lines.length + (includeRemote ? 1 : 0)}</span></button>
         </div>
 
         {activeTab === "bom" && model && <section className="planning-tab-panel" role="tabpanel">
@@ -99,10 +101,10 @@ export default function SunrooofBomBuilder() {
 
         {activeTab === "project" && <section className="planning-tab-panel no-print" role="tabpanel">
           <div className="planning-panel-head"><h3>② Project Lines</h3><span className="muted">Project planning and downloads</span></div>
-          <div className="planning-project-summary"><div><b>{lines.length}</b><span>Project Lines</span></div><div><b>{totalConsoles}</b><span>Total Consoles</span></div><div><b>{mrpNo}</b><span>MRP Number</span></div><div><b>{inr(totalValue)}</b><span>Project Value</span></div></div>
+          <div className="planning-project-summary"><div><b>{lines.length + (includeRemote ? 1 : 0)}</b><span>Project Lines</span></div><div><b>{totalConsoles}</b><span>Total Consoles</span></div><div><b>{mrpNo}</b><span>MRP Number</span></div><div><b>{inr(totalValue)}</b><span>Project Value</span></div></div>
           <div className="planning-project-meta"><label>Party Name<input value={partyName} onChange={(event) => setPartyName(event.target.value)} /></label><label>MRP No<input value={mrpNo} onChange={(event) => setMrpNo(event.target.value)} /></label><button className="secondary" onClick={() => setShowOrderDetails((value) => !value)}>{showOrderDetails ? "Hide Order Details" : "Order Details"}</button></div>
           {showOrderDetails && <div className="row planning-meta-fields">{META_FIELDS.map(([key, label]) => <div className="field" key={key}><label>{label}</label><input type={/Date$/.test(key) ? "date" : "text"} value={orderMeta[key]} onChange={(event) => setOrderMeta((current) => ({ ...current, [key]: event.target.value }))} /></div>)}</div>}
-          {lines.length === 0 ? <p className="muted planning-empty">No project lines yet. Configure a unit and select “Add to Project”.</p> : <table className="planning-lines-table"><thead><tr><th>#</th><th>Code</th><th>Design</th><th>Colour</th><th>Consoles</th><th>Qty</th><th>Line Price</th><th /></tr></thead><tbody>{lines.map((line) => <tr key={line.id}><td>{line.id}</td><td className="code">{displayModelCode(line.model)}</td><td>{line.model.designName}</td><td>{line.model.colorName}</td><td>{line.model.console}</td><td>{line.qty}</td><td>{inr(line.model.price * line.qty)}</td><td><button className="ghost" onClick={() => setLines((current) => current.filter((item) => item.id !== line.id))}>Remove</button></td></tr>)}</tbody></table>}
+          {lines.length === 0 && !includeRemote ? <p className="muted planning-empty">No project lines yet. Configure a unit and select “Add to Project”.</p> : <table className="planning-lines-table"><thead><tr><th>#</th><th>Code</th><th>Item</th><th>Finish</th><th>Consoles</th><th>Qty</th><th>Line Price</th><th /></tr></thead><tbody>{lines.map((line) => <tr key={line.id}><td>{line.id}</td><td className="code">{displayModelCode(line.model)}</td><td>{line.model.designName}</td><td>{line.model.colorName}</td><td>{line.model.console}</td><td>{line.qty}</td><td>{inr(line.model.price * line.qty)}</td><td><button className="ghost" onClick={() => setLines((current) => current.filter((item) => item.id !== line.id))}>Remove</button></td></tr>)}{includeRemote && <tr><td>R</td><td className="code">REMOTE</td><td>D1 Remote - {remoteColor}</td><td>—</td><td>—</td><td><input type="number" min={1} value={remoteQty} onChange={(event) => setRemoteQty(Math.max(1, Number(event.target.value) || 1))} style={{ width: 78 }} /></td><td>—</td><td><button className="ghost" onClick={() => setIncludeRemote(false)}>Remove</button></td></tr>}</tbody></table>}
           <div className="planning-project-actions"><button className="secondary" disabled={!lines.length} onClick={() => exportProjectBom(lines, includeRemote, partyName, mrpNo, orderMeta, remoteColor)}>Export BOM</button><button className="secondary" disabled={!lines.length} onClick={() => exportRafterPackingList(lines, partyName, mrpNo, orderMeta)}>Rafter Packing List</button><button className="secondary" disabled={!lines.length} onClick={() => exportConsolePackingList(lines, partyName, mrpNo, orderMeta, includeRemote, remoteColor)}>Console Packing List</button></div>
         </section>}
       </main>
